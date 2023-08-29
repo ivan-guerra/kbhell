@@ -1,26 +1,33 @@
-#include "linux_kbhit/linux_kbhit.hpp"
+#include "kbhit/linux_kbhit.hpp"
 
-#include <stdio.h>
-#include <sys/ioctl.h>
+#include <sys/time.h>
 #include <termios.h>
+#include <unistd.h>
+
+#include <cstdio>
 
 namespace kbhell {
 
-int _kbhit() {
-    static const int kStdin = 0;
+int _kbhit(int timeout_sec) {
     static bool initialized = false;
 
-    if (!initialized) { /* Use termios to turn off line buffering */
-        termios term = {};
-        tcgetattr(kStdin, &term);
-        term.c_lflag &= ~ICANON;
-        tcsetattr(kStdin, TCSANOW, &term);
-        setbuf(stdin, NULL);
+    if (!initialized) {
+        struct termios ttystate = {};
+        tcgetattr(STDIN_FILENO, &ttystate);
+        ttystate.c_lflag &= (~ICANON & ~ECHO);  // Not display character
+        ttystate.c_cc[VMIN] = 1;
+        tcsetattr(STDIN_FILENO, TCSANOW, &ttystate);
+
         initialized = true;
     }
 
-    int bytes_waiting = 0;
-    return (-1 == ioctl(kStdin, FIONREAD, &bytes_waiting)) ? -1 : bytes_waiting;
+    struct timeval tv = {.tv_sec = timeout_sec, .tv_usec = 0};
+    fd_set fds = {};
+    FD_ZERO(&fds);
+    FD_SET(STDIN_FILENO, &fds);
+    select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv);
+
+    return FD_ISSET(STDIN_FILENO, &fds);
 }
 
 }  // namespace kbhell
