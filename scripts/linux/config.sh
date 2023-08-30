@@ -3,10 +3,10 @@
 CWD=$(pwd)
 
 # Root directory.
-KBHELL_PROJECT_PATH=$(dirname ${CWD})
+KBHELL_PROJECT_PATH=$(dirname $(dirname ${CWD}))
 
 # Scripts directory.
-KBHELL_SCRIPTS_PATH="${KBHELL_PROJECT_PATH}/scripts"
+KBHELL_SCRIPTS_PATH="${KBHELL_PROJECT_PATH}/scripts/linux"
 
 # Binary directory.
 KBHELL_BIN_DIR="${KBHELL_PROJECT_PATH}/bin"
