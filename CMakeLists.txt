@@ -20,6 +20,23 @@ FetchContent_Declare(SDL
 FetchContent_MakeAvailable(SDL)
 
 set(SDL2MIXER_VENDORED ON CACHE INTERNAL "use vendored (not system) libs")
+
+# Turn off a number of options to speed up the build. We really only need the
+# WAV functionality of SDL_mixer, all other functions can be disabled.
+set(SDL2MIXER_FLAC OFF CACHE INTERNAL "")
+set(SDL2MIXER_MIDI OFF CACHE INTERNAL "")
+set(SDL2MIXER_MIDI_FLUIDSYNTH OFF CACHE INTERNAL "")
+set(SDL2MIXER_MIDI_FLUIDSYNTH_SHARED OFF CACHE INTERNAL "")
+set(SDL2MIXER_MIDI_TIMIDITY OFF CACHE INTERNAL "")
+set(SDL2MIXER_MOD OFF CACHE INTERNAL "")
+set(SDL2MIXER_MOD_MODPLUG OFF CACHE INTERNAL "")
+set(SDL2MIXER_MOD_XMP OFF CACHE INTERNAL "")
+set(SDL2MIXER_MOD_XMP_LITE OFF CACHE INTERNAL "")
+set(SDL2MIXER_MOD_XMP_SHARED OFF CACHE INTERNAL "")
+set(SDL2MIXER_MP3 OFF CACHE INTERNAL "")
+set(SDL2MIXER_MP3_DRMP3 OFF CACHE INTERNAL "")
+set(SDL2MIXER_MP3_MPG123 OFF CACHE INTERNAL "")
+set(SDL2MIXER_OPUS OFF CACHE INTERNAL "")
 FetchContent_Declare(SDL_mixer
                      GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
                      GIT_TAG SDL2)
