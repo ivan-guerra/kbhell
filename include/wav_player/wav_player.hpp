@@ -1,7 +1,7 @@
 #ifndef WAV_PLAYER_HPP_
 #define WAV_PLAYER_HPP_
 
-#include <SDL2/SDL_mixer.h>
+#include <SDL_mixer.h>
 
 #include <string>
 

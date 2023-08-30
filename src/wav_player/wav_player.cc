@@ -1,7 +1,7 @@
 #include "wav_player/wav_player.hpp"
 
 #include <SDL.h>
-#include <SDL2/SDL_mixer.h>
+#include <SDL_mixer.h>
 
 #include <stdexcept>
 #include <string>
