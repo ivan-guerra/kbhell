@@ -13,5 +13,5 @@ fi
 if [ -d $KBHELL_BUILD_DIR ]
 then
     echo "removing '$KBHELL_BUILD_DIR'"
-    rm -r $KBHELL_BUILD_DIR
+    rm -rf $KBHELL_BUILD_DIR
 fi
