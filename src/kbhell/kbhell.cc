@@ -7,6 +7,9 @@
 
 #ifdef __linux__
 #include "kbhit/linux_kbhit.hpp"
+#elif defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
+#include <conio.h>
+#include <windows.h>
 #endif
 
 void PrintUsage() {
@@ -24,9 +27,11 @@ int main(int argc, char** argv) {
     try {
         kbhell::WavPlayer player(argv[1]);
         bool exit = false;
+        int rc = 0;
         const char kEsc = static_cast<char>(27); /* ASCII ESC character */
         while (!exit) {
-            int rc = kbhell::_kbhit();
+#ifdef __linux__
+            rc = kbhell::_kbhit();
             if (-1 == rc) {
                 std::cerr << "error: failed to poll keyboard" << std::endl;
                 std::exit(EXIT_FAILURE);
@@ -37,6 +42,16 @@ int main(int argc, char** argv) {
                     player.Play();
                 }
             }
+#elif defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
+            rc = _kbhit();
+            if (rc) {
+                if (std::fgetc(stdin) == kEsc) {
+                    exit = true;
+                } else {
+                    player.Play();
+                }
+            }
+#endif
         }
     } catch (const std::exception& e) {
         std::cerr << "error: " << e.what() << std::endl;
