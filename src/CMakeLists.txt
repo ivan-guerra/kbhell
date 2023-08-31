@@ -59,5 +59,8 @@ if(UNIX)
 endif(UNIX)
 
 add_subdirectory(kbhell)
-add_subdirectory(kbhit)
 add_subdirectory(wav_player)
+
+if(UNIX)
+    add_subdirectory(kbhit)
+endif(UNIX)

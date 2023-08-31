@@ -7,11 +7,9 @@ project(kbhit
 
 add_library(${PROJECT_NAME} STATIC)
 
-if (UNIX)
-    target_sources(${PROJECT_NAME}
-        PRIVATE linux_kbhit.cc
-    )
-endif(UNIX)
+target_sources(${PROJECT_NAME}
+    PRIVATE linux_kbhit.cc
+)
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC ${KBHELL_INCLUDE_DIR}
