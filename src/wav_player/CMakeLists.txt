@@ -16,6 +16,6 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-   PUBLIC SDL2::SDL2
-   PUBLIC SDL2_mixer::SDL2_mixer
+   PUBLIC SDL2::SDL2-static
+   PUBLIC SDL2_mixer::SDL2_mixer-static
 )
