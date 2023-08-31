@@ -63,4 +63,6 @@ add_subdirectory(wav_player)
 
 if(UNIX)
     add_subdirectory(kbhit)
-endif(UNIX)
+elseif(WIN32)
+    add_subdirectory(kbhook)
+endif()
