@@ -5,7 +5,7 @@
 
 namespace kbhell {
 
-int RunEventLoop(WavPlayer& player);
+void RunEventLoop(WavPlayer& player);
 
 }
 

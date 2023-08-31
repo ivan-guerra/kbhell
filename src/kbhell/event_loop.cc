@@ -2,19 +2,19 @@
 
 #include <cstdio>
 #include <iostream>
+#include <stdexcept>
 
 #ifdef __linux__
 #include "kbhit/linux_kbhit.hpp"
 
-int kbhell::RunEventLoop(WavPlayer& player) {
+void kbhell::RunEventLoop(WavPlayer& player) {
     bool exit = false;
     int rc = 0;
     const char kEsc = static_cast<char>(27); /* ASCII ESC character */
     while (!exit) {
         rc = kbhell::_kbhit();
         if (-1 == rc) {
-            std::cerr << "error: failed to poll keyboard" << std::endl;
-            return -1;
+            throw std::runtime_error("failed to poll keyboard");
         } else if (rc > 0) {
             if (std::fgetc(stdin) == kEsc) {
                 exit = true;
@@ -23,7 +23,6 @@ int kbhell::RunEventLoop(WavPlayer& player) {
             }
         }
     }
-    return 0;
 }
 
 #elif defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
@@ -64,7 +63,7 @@ static std::string GetLastErrorAsString() {
     return message;
 }
 
-int kbhell::RunEventLoop(WavPlayer& player) {
+void kbhell::RunEventLoop(WavPlayer& player) {
     /* Setup a global keyboard hook. The kbhook.dll DLL contains the keyboard
      * hook function implementation that gets called on each keypress. */
     HINSTANCE kbhook_dll = LoadLibrary(TEXT("kbhook.dll"));
@@ -103,8 +102,6 @@ int kbhell::RunEventLoop(WavPlayer& player) {
     if (kbhook_dll && !FreeLibrary(kbhook_dll)) {
         throw std::runtime_error(GetLastErrorAsString());
     }
-
-    return 0;
 }
 
 #endif

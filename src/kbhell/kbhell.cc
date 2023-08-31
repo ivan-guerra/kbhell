@@ -19,9 +19,7 @@ int main(int argc, char** argv) {
 
     try {
         kbhell::WavPlayer player(argv[1]);
-        if (RunEventLoop(player)) {
-            std::exit(EXIT_FAILURE);
-        }
+        RunEventLoop(player);
     } catch (const std::exception& e) {
         std::cerr << "error: " << e.what() << std::endl;
         std::exit(EXIT_FAILURE);
