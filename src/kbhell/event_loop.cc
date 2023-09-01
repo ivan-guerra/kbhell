@@ -5,24 +5,96 @@
 #include <stdexcept>
 
 #ifdef __linux__
-#include "kbhit/linux_kbhit.hpp"
+#include <X11/Xlib.h>
+#include <X11/Xlibint.h>
+#include <X11/extensions/record.h>
+
+#include <atomic>
+
+static std::atomic_bool exit_event_loop(false);
+
+/* refer to libxnee */
+union XRecordDatum {
+    unsigned char type;
+    xEvent event;
+    xResourceReq req;
+    xGenericReply reply;
+    xError error;
+    xConnSetupPrefix setup;
+};
+
+void KeyCallback(XPointer closure, XRecordInterceptData* hook) {
+    if (hook->category != XRecordFromServer) {
+        ::XRecordFreeData(hook);
+        return;
+    }
+
+    kbhell::WavPlayer* player = reinterpret_cast<kbhell::WavPlayer*>(closure);
+    XRecordDatum* data = reinterpret_cast<XRecordDatum*>(hook->data);
+
+    int event_type = data->type;
+    BYTE keycode = data->event.u.u.detail;
+    const int kEsc = 9;
+    switch (event_type) {
+        case KeyRelease:
+            if (keycode == kEsc) { /* if ESC is pressed at any time, exit */
+                exit_event_loop = true;
+            } else {
+                player->Play();
+            }
+            break;
+        default:
+            break;
+    }
+    ::XRecordFreeData(hook);
+}
 
 void kbhell::RunEventLoop(WavPlayer& player) {
-    bool exit = false;
-    int rc = 0;
-    const char kEsc = static_cast<char>(27); /* ASCII ESC character */
-    while (!exit) {
-        rc = kbhell::_kbhit();
-        if (-1 == rc) {
-            throw std::runtime_error("failed to poll keyboard");
-        } else if (rc > 0) {
-            if (std::fgetc(stdin) == kEsc) {
-                exit = true;
-            } else {
-                player.Play();
-            }
-        }
+    ::Display* ctrl_disp = XOpenDisplay(nullptr);
+    ::Display* data_disp = XOpenDisplay(nullptr);
+    if (!ctrl_disp || !data_disp) {
+        throw std::runtime_error("unable to open X display");
     }
+
+    /* we must set the ctrl_disp to sync mode, or, when we enable the context
+     * in data_disp, there will be a fatal X error */
+    ::XSynchronize(ctrl_disp, true);
+
+    ::XRecordRange* record_rng = ::XRecordAllocRange();
+    if (!record_rng) {
+        throw std::runtime_error("could not alloc record range");
+    }
+    record_rng->device_events.first = KeyPress;
+    record_rng->device_events.last = KeyRelease;
+
+    ::XRecordClientSpec record_spec = XRecordAllClients;
+    ::XRecordContext record_ctx =
+        ::XRecordCreateContext(ctrl_disp, 0, &record_spec, 1, &record_rng, 1);
+    if (!record_ctx) {
+        throw std::runtime_error("could not create record context");
+    }
+
+    if (!::XRecordEnableContextAsync(data_disp, record_ctx, KeyCallback,
+                                     reinterpret_cast<::XPointer>(&player))) {
+        throw std::runtime_error("could not enable record context");
+    }
+
+    int major = 0;
+    int minor = 0;
+    if (!::XRecordQueryVersion(ctrl_disp, &major, &minor)) {
+        throw std::runtime_error(
+            "RECORD extension not supported on this X server");
+    }
+
+    while (!exit_event_loop) {
+        ::XRecordProcessReplies(data_disp);
+    }
+
+    ::XRecordDisableContext(ctrl_disp, record_ctx);
+    ::XRecordFreeContext(ctrl_disp, record_ctx);
+    ::XFree(record_rng);
+    ::XCloseDisplay(data_disp);
+    ::XCloseDisplay(ctrl_disp);
 }
 
 #elif defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
