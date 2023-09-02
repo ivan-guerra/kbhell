@@ -5,7 +5,7 @@
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = "kbhell"
 PROJECT_NUMBER         =
-PROJECT_BRIEF          = ""
+PROJECT_BRIEF          = "play a WAV file for every keypress"
 OUTPUT_DIRECTORY       = @CMAKE_CURRENT_SOURCE_DIR@/kbhell/
 CREATE_SUBDIRS         = NO
 OUTPUT_LANGUAGE        = English
@@ -24,6 +24,10 @@ EXTRACT_PRIVATE        = NO
 EXTRACT_PACKAGE        = YES
 EXTRACT_STATIC         = YES
 CASE_SENSE_NAMES       = YES
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+PREDEFINED             = __declspec(x)=
 
 #------------------------------------------------------------------------------
 # Configuration options related to warning and progress messages
