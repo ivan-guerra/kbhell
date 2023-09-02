@@ -56,6 +56,13 @@ void kbhell::RunEventLoop(WavPlayer& player) {
         throw std::runtime_error("unable to open X display");
     }
 
+    int major = 0;
+    int minor = 0;
+    if (!::XRecordQueryVersion(ctrl_disp, &major, &minor)) {
+        throw std::runtime_error(
+            "RECORD extension not supported on this X server");
+    }
+
     /* we must set the ctrl_disp to sync mode, or, when we enable the context
      * in data_disp, there will be a fatal X error */
     ::XSynchronize(ctrl_disp, true);
@@ -77,13 +84,6 @@ void kbhell::RunEventLoop(WavPlayer& player) {
     if (!::XRecordEnableContextAsync(data_disp, record_ctx, KeyCallback,
                                      reinterpret_cast<::XPointer>(&player))) {
         throw std::runtime_error("could not enable record context");
-    }
-
-    int major = 0;
-    int minor = 0;
-    if (!::XRecordQueryVersion(ctrl_disp, &major, &minor)) {
-        throw std::runtime_error(
-            "RECORD extension not supported on this X server");
     }
 
     while (!exit_event_loop) {
