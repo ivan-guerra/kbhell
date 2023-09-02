@@ -7,7 +7,7 @@
 
 void PrintUsage() {
     std::cout << "usage: kbhell WAV_FILE" << std::endl;
-    std::cout << "play WAV_FILE everytime a key is pressed (press ESC to stop)"
+    std::cout << "play WAV_FILE everytime a key is released (press ESC to stop)"
               << std::endl;
 }
 
