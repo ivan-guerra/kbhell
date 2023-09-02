@@ -27,14 +27,72 @@ FetchContent_Declare(SDL_mixer
 include(SDLMixerConfig)
 FetchContent_MakeAvailable(SDL_mixer)
 
+if(UNIX)
+    set(COMMON_FLAGS
+        -std=c++2a
+    )
+
+    set(WARNING_FLAGS
+        -Wall
+        -Wextra
+        -Werror
+        -pedantic
+    )
+
+    set(DEBUG_FLAGS
+        ${COMMON_FLAGS}
+        ${WARNING_FLAGS}
+        -O0
+        -g3
+        -ggdb
+        -fno-omit-frame-pointer
+        -fsanitize=address
+    )
+
+    set(RELEASE_FLAGS
+        ${COMMON_FLAGS}
+        -O2
+    )
+elseif(WIN32)
+    set(COMMON_FLAGS
+        /std:c++20
+    )
+
+    set(WARNING_FLAGS
+        /Wall
+    )
+
+    set(DEBUG_FLAGS
+        ${COMMON_FLAGS}
+        ${WARNING_FLAGS}
+        /DEBUG:FULL
+    )
+
+    set(RELEASE_FLAGS
+        ${COMMON_FLAGS}
+        /O2
+    )
+endif()
+
+add_compile_options(
+    "$<$<CONFIG:Release>:${RELEASE_FLAGS}>"
+    "$<$<CONFIG:Debug>:${DEBUG_FLAGS}>"
+)
+
+if(UNIX)
+    add_link_options(
+        "$<$<CONFIG:Debug>:-fsanitize=address>"
+    )
+endif(UNIX)
+
 add_subdirectory(docs)
 add_subdirectory(src)
 
-#if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-#    option(PACKAGE_TESTS "Build Unit Tests" OFF)
-#    if(PACKAGE_TESTS)
-#        enable_testing()
-#        include(GoogleTest)
-#        add_subdirectory(tests)
-#    endif()
-#endif()
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    option(PACKAGE_TESTS "Build Unit Tests" OFF)
+    if(PACKAGE_TESTS)
+        enable_testing()
+        include(GoogleTest)
+        add_subdirectory(tests)
+    endif()
+endif()

@@ -12,6 +12,7 @@ REM Generate the kbhell Visual Studio 2022 solution.
 cmake ^
     -G "Visual Studio 17 2022" ^
     -DBUILD_DOCS=ON ^
+    -DPACKAGE_TESTS=ON ^
     -DCMAKE_INSTALL_PREFIX=%KBHELL_BIN_DIR% ^
     -B %KBHELL_BUILD_DIR% ^
     -S %KBHELL_PROJECT_PATH%
