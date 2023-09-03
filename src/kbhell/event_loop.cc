@@ -1,3 +1,4 @@
+
 #include "kbhell/event_loop.hpp"
 
 #include <cstdio>
@@ -101,8 +102,17 @@ void kbhell::RunEventLoop(WavPlayer& player) {
 #include <conio.h>
 #include <windows.h>
 
+#include <atomic>
+#include <condition_variable>
 #include <cstdint>
+#include <mutex>
 #include <string>
+#include <thread>
+
+static bool key_released = false;
+static std::mutex key_released_mtx;
+static std::condition_variable key_released_cv;
+static std::atomic_bool exit_event_loop(false);
 
 /* https://stackoverflow.com/questions/1387064/how-to-get-the-error-message-from-the-error-code-returned-by-getlasterror
  */
@@ -135,84 +145,54 @@ static std::string GetLastErrorAsString() {
     return message;
 }
 
+LRESULT CALLBACK KeyCallback(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode < 0) {
+        return CallNextHookEx(nullptr, nCode, wParam, lParam);
+    }
+
+    KBDLLHOOKSTRUCT* kbinfo = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
+    if (wParam == WM_KEYUP) {
+        std::unique_lock<std::mutex> lock(key_released_mtx);
+        key_released = true;
+        if (VK_ESCAPE == kbinfo->vkCode) {
+            exit_event_loop = true; /* signal the main driver thread to exit */
+            PostQuitMessage(0);     /* signal this kbd hook thread to exit */
+        }
+        key_released_cv.notify_one();
+    }
+
+    return CallNextHookEx(nullptr, nCode, wParam, lParam);
+}
+
+void InstallHook() {
+    HHOOK kbd_hook = SetWindowsHookEx(WH_KEYBOARD_LL, &KeyCallback, 0, 0);
+    if (!kbd_hook) {
+        return;
+    }
+
+    MSG message;
+    while (GetMessage(&message, nullptr, 0, 0)) {
+        DispatchMessage(&message);
+    }
+
+    UnhookWindowsHookEx(kbd_hook);
+}
+
 void kbhell::RunEventLoop(WavPlayer& player) {
-    /* create a mutex used to sync access to shared memory */
-    HANDLE kbhook_mtx = CreateMutex(nullptr, FALSE, TEXT("kbhook-mtx"));
-    if (!kbhook_mtx) {
-        throw std::runtime_error(GetLastErrorAsString());
+    /* launch a seperate thread hosting a low level keyboard hook */
+    std::thread kbd_event_thrd(InstallHook);
+
+    while (!exit_event_loop) {
+        std::unique_lock<std::mutex> lock(key_released_mtx);
+        /* wait until a key release event has occurred */
+        key_released_cv.wait(lock, [] { return key_released; });
+
+        player.Play();
+        key_released = false;
     }
 
-    /* Create a block in shared memory. The shmem will hold an int flag
-     * that tells us when a key has been pressed. See kbhook lib for details. */
-    HANDLE mapped_filed =
-        CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0,
-                          sizeof(int), "kbhell-shmem");
-    if (!mapped_filed) {
-        throw std::runtime_error(GetLastErrorAsString());
-    }
-
-    /* a counter of the number of key releases lives in shmem */
-    int* num_keyreleases = static_cast<int*>(
-        MapViewOfFile(mapped_filed, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(int)));
-    if (!num_keyreleases) {
-        throw std::runtime_error(GetLastErrorAsString());
-    }
-    *num_keyreleases = 0;
-
-    /* Setup the global keyboard hook. */
-    HINSTANCE kbhook_dll = LoadLibrary(TEXT("kbhook.dll"));
-    if (!kbhook_dll) {
-        throw std::runtime_error(GetLastErrorAsString());
-    }
-    HOOKPROC kbhook_hook =
-        (HOOKPROC)GetProcAddress(kbhook_dll, "KeyReleaseEventCntr");
-    if (!kbhook_hook) {
-        throw std::runtime_error(GetLastErrorAsString());
-    }
-    HHOOK kbhook_handle =
-        SetWindowsHookEx(WH_GETMESSAGE, kbhook_hook, kbhook_dll, 0);
-    if (!kbhook_handle) {
-        throw std::runtime_error(GetLastErrorAsString());
-    }
-
-    bool exit = false;
-    int local_keypress = 0; /* detects a keypress in the app window */
-    const char kEsc = static_cast<char>(27); /* ASCII ESC character */
-    while (!exit) {
-        local_keypress = _kbhit();
-        if (local_keypress && (_getch() == kEsc)) {
-            exit = true;
-        }
-
-        DWORD rc = WaitForSingleObject(kbhook_mtx, 100);
-        switch (rc) {
-            case WAIT_OBJECT_0:
-                if (*num_keyreleases) {
-                    player.Play();
-                }
-                *num_keyreleases = 0;
-                ReleaseMutex(kbhook_mtx);
-                break;
-            case WAIT_ABANDONED:
-                exit = true;
-                break;
-        }
-    }
-
-    if (kbhook_mtx) {
-        CloseHandle(kbhook_mtx);
-    }
-    if (mapped_filed) {
-        CloseHandle(mapped_filed);
-    }
-    if (num_keyreleases) {
-        UnmapViewOfFile(num_keyreleases);
-    }
-    if (kbhook_handle) {
-        UnhookWindowsHookEx(kbhook_handle);
-    }
-    if (kbhook_dll) {
-        FreeLibrary(kbhook_dll);
+    if (kbd_event_thrd.joinable()) {
+        kbd_event_thrd.join();
     }
 }
 
