@@ -9,8 +9,5 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    if let Err(e) = kbhell::play_audio(&args.audio_file) {
-        eprintln!("error: {}", e);
-        std::process::exit(1);
-    }
+    kbhell::run(&args.audio_file);
 }
