@@ -1,0 +1,8 @@
+[package]
+name = "kbhell"
+version = "0.1.0"
+edition = "2021"
+description = "Annoy everyone around you by playing noises everytime you press a key."
+license = "Unlicense"
+
+[dependencies]
