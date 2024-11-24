@@ -1,3 +1,11 @@
+//! A keyboard sound effects program that plays audio files in response to keypresses.
+//!
+//! This program listens for keyboard events and plays a specified audio file when
+//! any key is pressed. It uses the `rdev` crate for keyboard input handling and
+//! the `rodio` crate for audio playback.
+//!
+//! The program can be terminated by pressing the Escape key.
+//!
 use clap::Parser;
 use rdev::{listen, Event, EventType, Key};
 use rodio::{Decoder, OutputStream, Sink};
@@ -5,6 +13,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::sync::{Arc, Mutex};
 
+#[doc(hidden)]
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -12,6 +21,25 @@ struct Args {
     audio_file: std::path::PathBuf,
 }
 
+/// Plays an audio file using the default audio output device.
+///
+/// # Arguments
+///
+/// * `audio_file` - A path to the audio file to be played
+///
+/// # Returns
+///
+/// * `Ok(())` if the audio playback was successful
+/// * `Err(Box<dyn Error>)` if there was an error during playback
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// * The default audio output stream cannot be created
+/// * The audio sink cannot be created
+/// * The audio file cannot be opened
+/// * The audio file cannot be decoded
+#[doc(hidden)]
 fn play_audio(audio_file: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     // Create an audio output stream
     let (_stream, stream_handle) = OutputStream::try_default()?;
@@ -32,6 +60,18 @@ fn play_audio(audio_file: &std::path::PathBuf) -> Result<(), Box<dyn std::error:
     Ok(())
 }
 
+/// Callback function that handles keyboard events and plays audio when triggered.
+///
+/// # Arguments
+///
+/// * `event` - The input event received from the event listener
+/// * `filename` - A thread-safe reference to the audio file path
+///
+/// This function will:
+/// * Exit the program if the Escape key is pressed
+/// * Attempt to play the audio file for any other keypress
+/// * Exit with an error code if audio playback fails
+#[doc(hidden)]
 fn keypress_callback(event: Event, filename: &Arc<Mutex<std::path::PathBuf>>) {
     if let EventType::KeyPress(_key) = event.event_type {
         if let EventType::KeyPress(Key::Escape) = event.event_type {
@@ -46,6 +86,7 @@ fn keypress_callback(event: Event, filename: &Arc<Mutex<std::path::PathBuf>>) {
     }
 }
 
+#[doc(hidden)]
 fn main() {
     let args = Args::parse();
 
