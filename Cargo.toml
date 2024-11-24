@@ -6,3 +6,5 @@ description = "Annoy everyone around you by playing noises everytime you press a
 license = "Unlicense"
 
 [dependencies]
+clap = {version = "4.5.21", features = ["derive"]}
+rodio = "0.20.1"
